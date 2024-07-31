@@ -677,6 +677,12 @@ const ModelPrinter: Omit<
     [ast.LoopActionUsage]: abstractElement,
     [ast.Relationship]: abstractElement,
     [ast.TextualAnnotatingElement]: abstractElement,
+    [ast.GumboBlock]: abstractElement,
+    [ast.GumboSubclause]: abstractElement,
+    [ast.SpecSection]: abstractElement,
+    [ast.State]: abstractElement,
+    [ast.StateVarDecl]: abstractElement,
+    [ast.GumboMembership]: abstractElement,
 
     [ast.InlineExpression]: typeUnion,
     [ast.FeatureRelationship]: typeUnion,

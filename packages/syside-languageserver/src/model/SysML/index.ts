@@ -92,3 +92,8 @@ export * from "./view-usage";
 export * from "./viewpoint-definition";
 export * from "./viewpoint-usage";
 export * from "./while-loop-action-usage";
+export * from "./gumbo-membership";
+export * from "./gumbo-subclause";
+export * from "./spec-section";
+export * from "./state";
+export * from "./state-var-decl";

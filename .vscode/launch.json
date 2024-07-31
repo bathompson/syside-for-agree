@@ -103,6 +103,43 @@
             }
         },
         {
+            "name": "Run agree Extension",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/packages/sysml-agree"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/*/out/**/*.js",
+                "${workspaceFolder}/packages/*/dist/**/*.js",
+                "${workspaceFolder}/packages/*/lib/**/*.js",
+                "!**/node_modules/**"
+            ],
+            "env": {
+                // same socket as attach port
+                "DEBUG_SOCKET": "8008"
+            }
+        },
+        {
+            "name": "Debug agree Extension",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/packages/sysml-agree"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/*/out/**/*.js",
+                "${workspaceFolder}/packages/*/dist/**/*.js",
+                "${workspaceFolder}/packages/*/lib/**/*.js",
+                "!**/node_modules/**"
+            ],
+            "env": {
+                // same socket as attach port
+                "DEBUG_BREAK": "true",
+                "DEBUG_SOCKET": "8008"
+            }
+        },
+        {
             "name": "Run Web Extension",
             "type": "extensionHost",
             "debugWebWorkerHost": true,

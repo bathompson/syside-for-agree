@@ -177,3 +177,18 @@ interface ObjectiveMembership extends FeatureMembership {}
 interface ViewRenderingMembership extends FeatureMembership {}
 interface MembershipExpose extends Expose, MembershipImport {}
 interface NamespaceExpose extends Expose, NamespaceImport {}
+
+interface GumboMembership extends Membership{}
+interface GumboSubclause extends GumboMembership {
+    specs: SpecSection;
+}
+interface SpecSection extends GumboMembership {
+    state?: State;
+}
+interface State extends GumboMembership {
+    decls: StateVarDecl[];
+}
+interface StateVarDecl extends GumboMembership {
+    name: string;
+    typeName: @PartDefinition;
+}

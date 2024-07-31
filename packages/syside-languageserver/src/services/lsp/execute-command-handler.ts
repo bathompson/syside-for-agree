@@ -34,6 +34,7 @@ import {
     FeatureValue,
     InlineExpression,
     isElement,
+    isPartDefinition,
     Type,
 } from "../../generated/ast";
 import { JSONMetaReplacer, JSONreplacer, toJSON } from "../../utils/common";
@@ -284,6 +285,47 @@ export class SysMLExecuteCommandHandler extends AbstractExecuteCommandHandler {
         register(DOCUMENT_COMMANDS);
     }
 
+    private getParts(node: AstNode): string[] {
+        let parts: string[] = [];
+        if (!isPartDefinition(node)) {
+            for (const child of node.$children) {
+                parts = parts.concat(this.getParts(child));
+            }
+        } else {
+            if (!node.declaredName) {
+                return ["unamed part"];
+            }
+            return [node.declaredName];
+        }
+        return parts;
+    }
+
+    /**
+     * @returns the list of parts in the current model
+     */
+    @editorCommand("sysml-agree.listParts")
+    protected listParts(
+        editor: RegisterTextEditorCommandsRequest.Parameters,
+        _ = CancellationToken.None
+    ): string[] {
+        const rootNode = this.findRootNode(editor);
+        if (!rootNode) return [];
+        return this.getParts(rootNode);
+    }
+
+    @editorCommand("sysml-agree.dumpRootAst")
+    protected dumpRootAst(
+        editor: RegisterTextEditorCommandsRequest.Parameters,
+        _ = CancellationToken.None
+    ): unknown | undefined {
+        const node = this.findRootNode(editor);
+        if (!node) {
+            console.log("No node found...");
+            return;
+        }
+        return toJSON(node, JSONreplacer);
+    }
+
     /**
      * @returns the AST under active cursor as JSON string
      */
@@ -478,5 +520,16 @@ export class SysMLExecuteCommandHandler extends AbstractExecuteCommandHandler {
             document.textDocument.offsetAt(editor.selection.active)
         );
         return leaf?.element;
+    }
+
+    protected findRootNode(
+        editor: RegisterTextEditorCommandsRequest.Parameters
+    ): AstNode | undefined {
+        const uri = URI.parse(editor.document.uri);
+        if (!this.documents.hasDocument(uri)) return;
+        const document = this.documents.getOrCreateDocument(uri);
+        const rootNode = document.parseResult.value.$cstNode;
+        if (!rootNode) return;
+        return rootNode.element;
     }
 }

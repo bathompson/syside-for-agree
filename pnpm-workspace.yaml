@@ -5,3 +5,4 @@ packages:
   - "packages/syside-languageclient"
   - "packages/syside-protocol"
   - "packages/syside-vscode"
+  - "packages/sysml-agree"

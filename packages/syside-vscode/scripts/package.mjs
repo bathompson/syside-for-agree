@@ -24,6 +24,9 @@ import process from "process";
 
 const exec = util.promisify(child_process.exec);
 
-exec("pnpm vsce package " + process.argv.slice(2).join(" "))
+const str = "pnpm vsce package " + process.argv.slice(2).join(" ");
+console.log(str);
+
+exec(str)
     .then(() => fs.copyFile(".README", "README.md"))
     .finally(() => fs.unlink(".README"));

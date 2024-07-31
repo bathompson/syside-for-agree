@@ -60,7 +60,16 @@ AnnotatingElement returns AnnotatingElement:
     Comment 
     | Documentation
     | TextualRepresentation
+    | AnnexRepresentation
     | MetadataUsage
+;
+
+AnnexRepresentation returns TextualRepresentation:
+    'language' language=STRING_VALUE AnnexLanguageBody
+;
+
+fragment AnnexLanguageBody:
+    '{' body=GumboBlock '}'
 ;
 
 fragment RelationshipBody:
@@ -2125,4 +2134,24 @@ ParameterRedefinition returns Redefinition:
 
 ArgumentValue returns FeatureValue:
     target=OwnedExpression
+;
+
+GumboBlock returns GumboBlock:
+    GumboSubclause
+;
+
+GumboSubclause returns GumboSubclause:
+    specs=SpecSection
+;
+
+SpecSection returns SpecSection:
+    (state = State)?
+;
+
+State returns State:
+    'state' (decls += StateVarDecl)+
+;
+
+StateVarDecl returns StateVarDecl:
+    (name = ID) ':' typeName=[PartDefinition:ID] ';'
 ;

@@ -30,7 +30,7 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     "[langium]": {
-        "editor.formatOnSave": true
+        "editor.formatOnSave": false
     },
     "[yaml]": {
         "editor.insertSpaces": true,

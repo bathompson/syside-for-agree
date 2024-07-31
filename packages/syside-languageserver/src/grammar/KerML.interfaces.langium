@@ -20,11 +20,11 @@ type InlineExpression =
     | CollectExpression
     | SelectExpression
     | FeatureReferenceExpression;
-    type NonOwnerType =
+type NonOwnerType =
     Membership
     | Annotation;
 
-    // Annotations
+// Annotations
 
 interface Annotation extends Relationship {
 }
@@ -33,8 +33,11 @@ interface AnnotatingElement extends Element {
     about: Annotation[];
 }
 
+interface GumboBlock extends Element {
+}
+
 interface TextualAnnotatingElement extends AnnotatingElement {
-    body: string;
+    body: string | GumboBlock;
 }
 
 interface Comment extends TextualAnnotatingElement {
@@ -64,12 +67,12 @@ type TypeRelationship =
     | Differencing
     | Disjoining
     | Intersecting;
-    type FeatureRelationship =
+type FeatureRelationship =
     TypeRelationship
     | FeatureChaining
     | FeatureInverting
     | TypeFeaturing;
-    interface Type extends Namespace {
+interface Type extends Namespace {
     isSufficient: boolean;
     isAbstract?: 'abstract';
     heritage: Inheritance[];

@@ -1,0 +1,140 @@
+{
+  "name": "sysml-agree",
+  "displayName": "AGREE for SysMLv2",
+  "description": "Plugin to run the Agree model checker on SysMLv2 models.",
+  "publisher": "Collins",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": ["workspaceContains:**/*.sysml"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sysml-agree.listParts.console",
+        "title": "SysML AGREE: List Parts"
+      },
+      {
+        "command": "sysml-agree.dumpRootAst.console",
+        "title": "SysML AGREE: Dump Root Ast"
+      },
+      {
+        "command": "sysml-agree.runAgreeOnActiveFile",
+        "title": "SysML AGREE: Run Agree at cursor"
+      },
+      {
+        "command": "sysml-agree.runAgreeOnThisFile",
+        "title": "SysML AGREE: Run Agree on This File"
+      },
+      {
+        "command": "sysml-agree.runAgreeOnThisFolder",
+        "title": "SysML AGREE: Run Agree on all SysML files in this folder."
+      },
+      {
+        "command": "sysml-agree.runAgreeOnActiveFileInFolder",
+        "title": "SysML AGREE: Run Agree at cursor with all sysml files in the active file's folder"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceLangId == sysml",
+          "command": "sysml-agree.runAgreeOnActiveFile"
+        },
+        {
+          "when": "resourceLangId == sysml",
+          "command": "sysml-agree.runAgreeOnActiveFileInFolder"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceLangId == sysml",
+          "command": "sysml-agree.runAgreeOnThisFile"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "command": "sysml-agree.runAgreeOnThisFolder"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Sysml Agree",
+      "properties": {
+        "sysml-agree.translatorJarPath": {
+          "type": "string",
+          "default": null,
+          "description": "Path to the the modified SysML2AADL translator .jar."
+        },
+        "sysml-agree.pathToOsateWithAgreeCLI": {
+          "type": "string",
+          "default": null,
+          "description": "Path to the OSATE installation with Agree CLI installed."
+        },
+        "sysml-agree.pathToSysmlBaseLibrary": {
+          "type": "string",
+          "default": null,
+          "description": "Path to the SysMLv2 base library."
+        },
+        "sysml-agree.pathToAADLLibForSysml": {
+          "type": "string",
+          "default": null,
+          "description": "Path to the SysMLv2 AADL library."
+        },
+        "sysml-agree.askAboutLocalAADLLibrary": {
+          "type": "boolean",
+          "default": true
+        },
+        "sysml-agree.keepTranslatedAADLFiles": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run clean && pnpm run esbuild",
+    "compile": "pnpm run check-types && pnpm run lint && pnpm run esbuild",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "pnpm run esbuild --watch",
+    "esbuild": "node ../../scripts/build.mjs node src/extension.ts src/languageserver/main.ts -o ./dist/",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "vscode:package": "pnpm vsce package",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test",
+    "export": "node ./scripts/package.mjs",
+    "clean": "shx rm -rf out *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.91.0",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser": "^7.11.0",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.4.0",
+    "@vscode/vsce": "^2.20.0",
+    "esbuild": "^0.21.5",
+    "eslint": "^8.57.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "langium": "~1.2.0",
+    "syside-base": "workspace:*",
+    "syside-languageclient": "workspace:*",
+    "syside-languageserver": "workspace:*",
+    "syside-protocol": "workspace:*",
+    "vscode-languageserver": "~8.0.2"
+  },
+  "vsce": {
+    "dependencies": false
+  }
+}

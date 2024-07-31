@@ -185,7 +185,8 @@ const AstToModel: {
 
     [ast.TextualAnnotatingElement](model, node) {
         // Body may fail to parse and be left undefined so check here
-        if (node.body as string | undefined) model.body = prettyAnnotationBody(node.body);
+        if (node.body as string | undefined)
+            model.body = prettyAnnotationBody(node.body.toString());
     },
 
     [ast.TextualRepresentation](model, node) {
