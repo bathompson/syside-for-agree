@@ -1,10 +1,14 @@
-import { Options } from "./options";
 import * as vscode from "vscode";
 import os from "os";
-
-async function checkForWorkspaceAADLLib(options: Options) {
-    const askAboutLib = options.get("askAboutLocalAADLLibrary");
-    const pathToLib = options.get("pathToAADLLibForSysml");
+import { ExtensionOptions } from "../options/extension-options";
+import { SysMLAgreeConfigs } from "../options/agree-ext-options";
+/**
+ * Searches the workspace root for the AADL base library for SysMLv2 (assumed to be called `aadl.library`) and, if found, offers to set the found library as the base library the extension uses.
+ * @param options Object containing the user-defined options for this extension
+ */
+async function checkForWorkspaceAADLLib(options: ExtensionOptions) {
+    const askAboutLib = options.get(SysMLAgreeConfigs.CHECK_LOCAL_AADL_BASE_LIB);
+    const pathToLib = options.get(SysMLAgreeConfigs.AADL_BASE_LIB_PATH);
     if (!askAboutLib.value()) {
         return;
     }
@@ -22,15 +26,50 @@ async function checkForWorkspaceAADLLib(options: Options) {
                 "No"
             );
             if (set === "Yes") {
-                pathToLib.update(path, vscode.ConfigurationTarget.Workspace);
+                await pathToLib.update(path, vscode.ConfigurationTarget.Workspace);
             } else {
-                askAboutLib.update(false, vscode.ConfigurationTarget.Workspace);
+                await askAboutLib.update(false, vscode.ConfigurationTarget.Workspace);
             }
         }
     }
 }
 
-async function checkConfigPaths(options: Options) {
+/**
+ * SysIDE has a configuration option for the SysML library path. If it's set, prompt the user to import it into this extension.
+ * @param options
+ */
+async function checkForSysIDESysMLBaseLib(options: ExtensionOptions) {
+    const pathToSysmlStandardLibrary = options.get(SysMLAgreeConfigs.SYSML_STD_LIB_PATH);
+    const SysIDEStdLibPath = vscode.workspace.getConfiguration("syside").get("standardLibraryPath");
+    if (SysIDEStdLibPath && !pathToSysmlStandardLibrary.isSet()) {
+        const set = await vscode.window.showInformationMessage(
+            "SysIDE has a path to the SysML standard libraries set. Would you like to use it as the SysML standard library for this extension as well?",
+            "Global",
+            "Workspace",
+            "No"
+        );
+        if (set !== "No") {
+            await pathToSysmlStandardLibrary.update(
+                SysIDEStdLibPath,
+                set === "Global"
+                    ? vscode.ConfigurationTarget.Global
+                    : vscode.ConfigurationTarget.Workspace
+            );
+        }
+    }
+}
+
+export async function checkDetectableSettings(options: ExtensionOptions) {
+    await checkForWorkspaceAADLLib(options);
+    await checkForSysIDESysMLBaseLib(options);
+}
+
+/**
+ * Checks to make sure required configs are set, and give the user an oppertunity to set them now if not.
+ * @param options Object containing the user-defined options for this extension
+ */
+
+export async function checkRequiredConfigs(options: ExtensionOptions) {
     const homeDir: vscode.Uri = vscode.Uri.file(os.homedir());
 
     for (const option of options) {
@@ -48,13 +87,13 @@ async function checkConfigPaths(options: Options) {
                     canSelectFolders: option.isDir,
                     openLabel: "Select",
                     defaultUri: homeDir,
-                    filters: option.fileExtension
-                        ? { "Executable File": [option.fileExtension] }
+                    filters: option.fileExtensions
+                        ? { "Executable File": option.fileExtensions }
                         : {},
                 };
-                vscode.window.showOpenDialog(options).then((fileUri) => {
+                await vscode.window.showOpenDialog(options).then(async (fileUri) => {
                     if (fileUri && fileUri[0]) {
-                        option.update(
+                        await option.update(
                             fileUri[0].fsPath,
                             answer === "Global"
                                 ? vscode.ConfigurationTarget.Global
@@ -69,14 +108,15 @@ async function checkConfigPaths(options: Options) {
     }
 }
 
-export function checkConfig(options: Options) {
-    checkForWorkspaceAADLLib(options).then(() => checkConfigPaths(options));
-}
-
-export function findLastSlash(path: string): number {
-    const lastIx = path.length - 1;
+/**
+ * Finds the last slash (forwards or backwards) in a string. Useful for when you need to get the directory a file is in.
+ * @param str
+ * @returns The index of the last slash in str
+ */
+export function findLastSlash(str: string): number {
+    const lastIx = str.length - 1;
     for (let curIx = lastIx; curIx >= 0; curIx--) {
-        if (path.charAt(curIx) === "\\" || path.charAt(curIx) === "/") {
+        if (str.charAt(curIx) === "\\" || str.charAt(curIx) === "/") {
             return curIx;
         }
     }

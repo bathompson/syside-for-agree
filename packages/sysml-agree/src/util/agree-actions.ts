@@ -1,12 +1,20 @@
 import * as vscode from "vscode";
-import { Options } from "../util/options";
 import fs from "fs";
 import cp from "child_process";
 import os from "os";
 import * as AstUtil from "../util/ast-util";
 import { findLastSlash } from "../util/ext-util";
+import { ExtensionOptions } from "../options/extension-options";
+import { SysMLAgreeConfigs } from "../options/agree-ext-options";
 
-async function runAgreeOnFile(file: vscode.Uri, impl: string, options: Options) {
+/**
+ *  This function runs the SysML2AADL translator on the provided file, runs AGREE on the output AADL file, then opens the resulting json output file in a text editor.
+ * @param file The SysML file we want to run AGREE on
+ * @param impl The fully qualified name of the system implementation we want to run AGREE on
+ * @param options Object containing the user-defined options for this extension
+ */
+async function runAgreeOnFile(file: vscode.Uri, impl: string, options: ExtensionOptions) {
+    //Check to make sure all options needed to run this extension are set.
     for (const option of options) {
         if (option.valueRequired && !option.isSet()) {
             vscode.window.showErrorMessage(
@@ -15,43 +23,69 @@ async function runAgreeOnFile(file: vscode.Uri, impl: string, options: Options) 
             return;
         }
     }
-    const translatorJarPath = options.get("translatorJarPath").value();
-    const osateExePath = options.get("pathToOsateWithAgreeCLI").value();
-    const sysmlLibPath = options.get("pathToSysmlBaseLibrary").value();
-    const aadlLibPath = options.get("pathToAADLLibForSysml").value();
-    const keepTranslatedAADLFiles = options.get("keepTranslatedAADLFiles").value();
+    //Get the value for each of the required options.
+    const translatorJarPath = options.get(SysMLAgreeConfigs.TRANSLATOR_JAR_PATH).value();
+    const osateExePath = options.get(SysMLAgreeConfigs.OSATE_PATH).value();
+    const sysmlLibPath = options.get(SysMLAgreeConfigs.SYSML_STD_LIB_PATH).value();
+    const aadlLibPath = options.get(SysMLAgreeConfigs.AADL_BASE_LIB_PATH).value();
+    const keepTranslatedAADLFiles = options
+        .get(SysMLAgreeConfigs.KEEP_TRANSLATED_AADL_FILES)
+        .value();
 
+    //Get the current workspace folder and set up all of the paths needed.
     const curWorkspaceFolder = vscode.workspace.getWorkspaceFolder(file)?.uri;
     if (!curWorkspaceFolder) {
         vscode.window.showErrorMessage("Error finding workspace folder");
         return;
     }
+    //If the user wants to keep translated AADL files, do all work in the workspace directory, otherwise do all work in the OS temp folder.
     const tmpFolderRootPath = keepTranslatedAADLFiles ? curWorkspaceFolder.fsPath : os.tmpdir();
     const tmpFolderPath = `${tmpFolderRootPath}/agreeTmp`;
     const tmpProjectPath = `${tmpFolderPath}/tmpProj`;
+    //Remove any old folder if it exists. We want to start with a clean project.
     if (fs.existsSync(tmpFolderPath)) {
         fs.rmSync(tmpFolderPath, { recursive: true });
     }
+    //Make the directories
     fs.mkdirSync(tmpFolderPath);
     fs.mkdirSync(tmpProjectPath);
+
     vscode.window.showInformationMessage("Running agree...");
+    //Run the SysML2AADL translator.
     cp.execSync(
         `java -jar ${translatorJarPath} -a ${aadlLibPath} -s ${sysmlLibPath} -o ${tmpProjectPath} ${file.fsPath}`
     );
+
+    //This will set up the eclipse project necessary for AGREE to run
     fs.writeFileSync(`${tmpProjectPath}/.project`, projectConfigText);
-    const jsonPath = `${curWorkspaceFolder.fsPath}/output.json`;
+
+    const jsonPath = `${curWorkspaceFolder.fsPath}/${impl.replace("::", "_")}.json`;
+    //Run AGREE on the created eclipse file
     cp.execSync(
         `${osateExePath} -application com.rockwellcollins.atc.agree.cli.Agree -noSplash -data ${tmpFolderPath} -p tmpProj -c ${impl} -strategy single -o ${jsonPath}`
     );
+
+    //Remove translated files if the user doesn't want them
     if (!keepTranslatedAADLFiles) {
         fs.rmSync(tmpFolderPath, { recursive: true });
     }
+    //Open the output in a new text editor within VSCode
     const jsonDoc = await vscode.workspace.openTextDocument(jsonPath);
     vscode.window.showTextDocument(jsonDoc);
     vscode.window.showInformationMessage("Done running Agree!");
 }
 
-export async function runAgreeOnFolder(files: vscode.Uri[], impl: string, options: Options) {
+/**
+ * Similar to above, but will translate an array of SysMLv2 files to AGREE. The only meaningful differences between this method and runAgreeOnFile is logic to handle multiple files.
+ * @param files The set of files to run AGREE on
+ * @param impl The fully qualified name of the system implementation we want to run AGREE on
+ * @param options Object containing the user-defined options for this extension
+ */
+export async function runAgreeOnFolder(
+    files: vscode.Uri[],
+    impl: string,
+    options: ExtensionOptions
+) {
     for (const option of options) {
         if (option.valueRequired && !option.isSet()) {
             vscode.window.showErrorMessage(
@@ -60,11 +94,13 @@ export async function runAgreeOnFolder(files: vscode.Uri[], impl: string, option
             return;
         }
     }
-    const translatorJarPath = options.get("translatorJarPath").value();
-    const osateExePath = options.get("pathToOsateWithAgreeCLI").value();
-    const sysmlLibPath = options.get("pathToSysmlBaseLibrary").value();
-    const aadlLibPath = options.get("pathToAADLLibForSysml").value();
-    const keepTranslatedAADLFiles = options.get("keepTranslatedAADLFiles").value();
+    const translatorJarPath = options.get(SysMLAgreeConfigs.TRANSLATOR_JAR_PATH).value();
+    const osateExePath = options.get(SysMLAgreeConfigs.OSATE_PATH).value();
+    const sysmlLibPath = options.get(SysMLAgreeConfigs.SYSML_STD_LIB_PATH).value();
+    const aadlLibPath = options.get(SysMLAgreeConfigs.AADL_BASE_LIB_PATH).value();
+    const keepTranslatedAADLFiles = options
+        .get(SysMLAgreeConfigs.KEEP_TRANSLATED_AADL_FILES)
+        .value();
 
     const curWorkspaceFolder = vscode.workspace.getWorkspaceFolder(files[0])?.uri;
     if (!curWorkspaceFolder) {
@@ -84,7 +120,7 @@ export async function runAgreeOnFolder(files: vscode.Uri[], impl: string, option
         `java -jar ${translatorJarPath} -a ${aadlLibPath} -s ${sysmlLibPath} -o ${tmpProjectPath} ${files.map((uri) => uri.fsPath).join(" ")}`
     );
     fs.writeFileSync(`${tmpProjectPath}/.project`, projectConfigText);
-    const jsonPath = `${curWorkspaceFolder.fsPath}/output.json`;
+    const jsonPath = `${curWorkspaceFolder.fsPath}/${impl.replace("::", "_")}.json`;
     cp.execSync(
         `${osateExePath} -application com.rockwellcollins.atc.agree.cli.Agree -noSplash -data ${tmpFolderPath} -p tmpProj -c ${impl} -strategy single -o ${jsonPath}`
     );
@@ -96,20 +132,28 @@ export async function runAgreeOnFolder(files: vscode.Uri[], impl: string, option
     vscode.window.showInformationMessage("Done running Agree!");
 }
 
-export async function runAgreeOnActiveFile(options: Options) {
+/**
+ * Runs AGREE on a SysML file in the active editor
+ * @param options
+ */
+export async function runAgreeOnActiveFile(options: ExtensionOptions) {
+    //Get the active editor and ensure it actually exists.
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
         return;
     }
+    //Make sure the active editor is a SysML file
     if (activeEditor.document.languageId !== "sysml") {
         return;
     }
-    const curFile = activeEditor.document;
 
+    const curFile = activeEditor.document;
+    //Get the part definition at the cursor position
     const impl = await AstUtil.runEditorProcedure(
         activeEditor,
         AstUtil.SysMLEditorProcedures.getQualifiedNameAtPosition
     );
+    //Make sure we actually found a part definition, and make sure it's an implementation.
     if (!impl) {
         vscode.window.showErrorMessage("Part implementation not found.");
         return;
@@ -120,11 +164,17 @@ export async function runAgreeOnActiveFile(options: Options) {
         );
         return;
     }
+
+    //Run agree on the file
     vscode.window.showInformationMessage(`Running agree on implementation ${impl}!`);
     runAgreeOnFile(curFile.uri, impl, options);
 }
 
-export async function runAgreeOnActiveFileInFolder(option: Options) {
+/**
+ * Same as runAgreeOnActiveFile, but includes other SysML files in the folder containing the SysML file.
+ * @param option
+ */
+export async function runAgreeOnActiveFileInFolder(option: ExtensionOptions) {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
         return;
@@ -149,6 +199,9 @@ export async function runAgreeOnActiveFileInFolder(option: Options) {
         return;
     }
 
+    //We need to do some work to find the actual folder this file is in, as VSCode doesn't keep track of subdirectories.
+    //NOTE: Workspace folders in VSCode refer to top level folders. When you open a folder in VSCode, that folder becomes a workspace directory and none of it's children do.
+    //You can add more than one workspace folder, but they would probably not be children of an existing workspace folder and they must be added manually by the user.
     const folder = vscode.workspace.getWorkspaceFolder(activeEditor.document.uri);
     if (!folder) {
         vscode.window.showErrorMessage(
@@ -156,7 +209,7 @@ export async function runAgreeOnActiveFileInFolder(option: Options) {
         );
         return;
     }
-
+    //Here we get the folder path relative to the root of the VSCode workspace.
     const relFolderPath = activeEditor.document.uri.fsPath.substring(
         folder.uri.fsPath.length + 1,
         findLastSlash(activeEditor.document.uri.fsPath)
@@ -164,13 +217,21 @@ export async function runAgreeOnActiveFileInFolder(option: Options) {
 
     vscode.window.showInformationMessage(`Running agree on implementation ${impl}!`);
 
+    //Get all SysML files in the folder and run AGREE on those files.
     const files = await vscode.workspace.findFiles(`${relFolderPath}/*.sysml`);
     runAgreeOnFolder(files, impl, option);
 }
 
-export async function runAgreeOnThisFile(uri: vscode.Uri, options: Options) {
+/**
+ * Run AGREE on a non-active file. Similar to runAgreeOnActiveFile
+ * @param uri The URI of a SysML file
+ * @param options
+ */
+export async function runAgreeOnThisFile(uri: vscode.Uri, options: ExtensionOptions) {
+    //Open the text document. This will not display it to the user.
     const doc = await vscode.workspace.openTextDocument(uri);
 
+    //Get all possible implementations in this file and display them to the user so they may select one to use.
     const impls = await AstUtil.runAstProcedure(
         doc.getText(),
         AstUtil.SysMLAstProcedures.getQualifiedNames
@@ -191,7 +252,12 @@ export async function runAgreeOnThisFile(uri: vscode.Uri, options: Options) {
     runAgreeOnFile(doc.uri, impl, options);
 }
 
-export async function runAgreeOnThisFolder(uri: vscode.Uri, options: Options) {
+/**
+ * Similar to runAgreeOnThisFile but works on a whole folder instead of just one file.
+ * @param uri The URI of a folder containing SysML models
+ * @param options
+ */
+export async function runAgreeOnThisFolder(uri: vscode.Uri, options: ExtensionOptions) {
     const folder = vscode.workspace.getWorkspaceFolder(uri);
     if (!folder) {
         vscode.window.showErrorMessage("No folder found.");
@@ -234,6 +300,9 @@ export async function runAgreeOnThisFolder(uri: vscode.Uri, options: Options) {
     runAgreeOnFolder(sysmlFiles, impl, options);
 }
 
+/**
+ * This is the bit of XML required to make a .project file for an Eclipse project. This is needed to run AGREE from the command line.
+ */
 const projectConfigText = `<?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>tmpProj</name>

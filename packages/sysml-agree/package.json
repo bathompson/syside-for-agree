@@ -74,21 +74,21 @@
           "default": null,
           "description": "Path to the OSATE installation with Agree CLI installed."
         },
-        "sysml-agree.pathToSysmlBaseLibrary": {
+        "sysml-agree.pathToSysmlStandardLibrary": {
           "type": "string",
           "default": null,
-          "description": "Path to the SysMLv2 base library."
+          "description": "Path to the SysMLv2 standard library."
         },
-        "sysml-agree.pathToAADLLibForSysml": {
+        "sysml-agree.pathToAadlBaseLibForSysml": {
           "type": "string",
           "default": null,
-          "description": "Path to the SysMLv2 AADL library."
+          "description": "Path to the SysMLv2 AADL base library."
         },
-        "sysml-agree.askAboutLocalAADLLibrary": {
+        "sysml-agree.askAboutLocalAadlBaseLibrary": {
           "type": "boolean",
           "default": true
         },
-        "sysml-agree.keepTranslatedAADLFiles": {
+        "sysml-agree.keepTranslatedAadlFiles": {
           "type": "boolean",
           "default": false
         }
