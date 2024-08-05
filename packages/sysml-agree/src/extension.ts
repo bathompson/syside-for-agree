@@ -102,7 +102,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     //Create the client extension. This will allow SysIDE to launch our custom language server.
-    const extensionApi = new AgreeClientExtension();
+    const extensionApi = new AgreeClientExtension(context);
 
     //Return API so SysIDE can access it.
     return extensionApi;
