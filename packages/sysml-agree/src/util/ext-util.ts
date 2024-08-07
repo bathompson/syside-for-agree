@@ -92,7 +92,7 @@ export async function checkRequiredConfigs(options: ExtensionOptions) {
                         : {},
                 };
                 await vscode.window.showOpenDialog(options).then(async (fileUri) => {
-                    if (fileUri && fileUri[0]) {
+                    if (fileUri) {
                         await option.update(
                             fileUri[0].fsPath,
                             answer === "Global"
