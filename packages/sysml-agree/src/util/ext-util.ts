@@ -113,7 +113,7 @@ export async function checkRequiredConfigs(options: ExtensionOptions) {
  * @param str
  * @returns The index of the last slash in str
  */
-export function findLastSlash(str: string): number {
+function findLastSlash(str: string): number {
     const lastIx = str.length - 1;
     for (let curIx = lastIx; curIx >= 0; curIx--) {
         if (str.charAt(curIx) === "\\" || str.charAt(curIx) === "/") {
@@ -121,4 +121,8 @@ export function findLastSlash(str: string): number {
         }
     }
     return -1;
+}
+
+export function findWorkspaceSubfolder(workspaceFolder: vscode.Uri, file: vscode.Uri): string {
+    return file.fsPath.substring(workspaceFolder.fsPath.length + 1, findLastSlash(file.fsPath));
 }
