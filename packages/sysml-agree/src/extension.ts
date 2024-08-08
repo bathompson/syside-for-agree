@@ -93,13 +93,15 @@ export function activate(context: vscode.ExtensionContext) {
     //We want checkDetectableSettings to finish executing before we run checkRequiredConfigs.
     //Since checkDetectableSettings is async, we use then() to make sure checkRequiredConfigs is executed after checkDetectableSettings is done.
     //Normally we would use the await keyword, but await only works in async functions, and activate() is not async.
-    checkDetectableSettings(options).then(() => checkRequiredConfigs(options));
+    checkDetectableSettings(options).then(() => {
+        checkRequiredConfigs(options);
 
-    const registeredCommandsDisposables = registerCommands(options);
+        const registeredCommandsDisposables = registerCommands(options);
 
-    for (const disposable of registeredCommandsDisposables) {
-        context.subscriptions.push(disposable);
-    }
+        for (const disposable of registeredCommandsDisposables) {
+            context.subscriptions.push(disposable);
+        }
+    });
 
     //Create the client extension. This will allow SysIDE to launch our custom language server.
     const extensionApi = new AgreeClientExtension(context);

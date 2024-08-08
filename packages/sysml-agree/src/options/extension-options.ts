@@ -4,7 +4,7 @@ import { WorkspaceConfiguration, ConfigurationTarget, workspace } from "vscode";
  * This class manages a single extension configuration option. It allows you to retrieve the option value, update the value, and ensure the value is set.
  */
 class ConfigurationOption {
-    private wc: WorkspaceConfiguration;
+    private wc: string;
     name: string;
     description: string;
     isDir: boolean;
@@ -16,15 +16,15 @@ class ConfigurationOption {
      * @returns The current value of the option
      */
     public value() {
-        return this.wc.get(this.name);
+        return workspace.getConfiguration(this.wc).get(this.name);
     }
     /**
      *
      * @param value The new value of the option
      * @param target The target scope of the change (workspace folder, workspace, global)
      */
-    public async update(value: any, target?: ConfigurationTarget) {
-        await this.wc.update(this.name, value, target);
+    public update(value: any, target?: ConfigurationTarget): Thenable<void> {
+        return workspace.getConfiguration(this.wc).update(this.name, value, target);
     }
 
     /**
@@ -32,7 +32,7 @@ class ConfigurationOption {
      * @returns A boolean representing if the option has a non-null value. NOTE: May need to add undefined as well.
      */
     public isSet(): boolean {
-        return this.wc.get(this.name) !== null;
+        return workspace.getConfiguration(this.wc).get(this.name) !== null;
     }
 
     /**
@@ -45,7 +45,7 @@ class ConfigurationOption {
      * @param fileExtensions If the configuration option points to a file, you may put an array of valid file extensions.
      */
     constructor(
-        wc: WorkspaceConfiguration,
+        wc: string,
         name: string,
         description: string,
         isDir: boolean,
@@ -68,7 +68,7 @@ class ConfigurationOption {
  */
 export class ExtensionOptions implements Iterable<ConfigurationOption> {
     private optionMap: Map<string, ConfigurationOption>;
-    private wc: WorkspaceConfiguration;
+    private configSection: string;
 
     /**
      *
@@ -105,7 +105,7 @@ export class ExtensionOptions implements Iterable<ConfigurationOption> {
         let rec: ConfigurationOption;
         if (fileExtensions) {
             rec = new ConfigurationOption(
-                this.wc,
+                this.configSection,
                 name,
                 configDescription,
                 valueIsDir,
@@ -114,7 +114,7 @@ export class ExtensionOptions implements Iterable<ConfigurationOption> {
             );
         } else {
             rec = new ConfigurationOption(
-                this.wc,
+                this.configSection,
                 name,
                 configDescription,
                 valueIsDir,
@@ -131,7 +131,7 @@ export class ExtensionOptions implements Iterable<ConfigurationOption> {
      */
     constructor(configSection: string) {
         this.optionMap = new Map();
-        this.wc = workspace.getConfiguration(configSection);
+        this.configSection = configSection;
     }
 
     /**
